@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+python-dotenv
+bcrypt
+databases
+asyncpg
+psycopg2
+pydantic[email]
