@@ -1,13 +1,10 @@
 from fastapi import FastAPI
-
-from app.routers.user_router import router
-from app.config.development_config import DevelopmentConfig
-from app.config.production_config import ProductionConfig
-import os
+from app.controllers import auth_controller
+from fastapi.responses import RedirectResponse
 
 app = FastAPI(
     title="PET USER MANAGEMENT API",
-    description=f'Login krne ke kaam aata h, {" ".join(["Jeevitha S", "Harshita", "Priyank"])}',
+    description=f'Login krne ke kaam aata h, \nDevelopers: {" ".join(["Jeevitha S", "Harshita", "Priyank"])}',
     version="0.0.1",
     terms_of_service="http://PET_LOGIN.com",
     Developer_Name= ["Jeevitha S", "Harshita", "Priyank"],
@@ -23,13 +20,10 @@ app = FastAPI(
     docs_url="/docs", redoc_url=None
 )
 
-if os.getenv("ENVIRONMENT") == "production":
-    config = ProductionConfig()
-else:
-    config = DevelopmentConfig()
 
-app.include_router(router)
+# Include the router from the auth_controller
+app.include_router(auth_controller.router)
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def read_root():
-    return {"Hello": "World"}
+    return RedirectResponse(url="/docs")

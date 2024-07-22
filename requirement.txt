@@ -1,10 +1,8 @@
 fastapi
 uvicorn
 sqlalchemy
+snowflake-connector-python==3.11.0
+passlib
+python-jose
 pydantic
-python-dotenv
 bcrypt
-databases
-asyncpg
-psycopg2
-pydantic[email]
