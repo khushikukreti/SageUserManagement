@@ -1,3 +1,5 @@
+import re
+
 from fastapi import Depends, HTTPException
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
@@ -82,6 +84,52 @@ def authenticate_user(db, email: str, password: str):
         return False
     return user
 
+def validate_password(password: str):
+    """
+    Validate the given password based on multiple criteria.
+
+    Args:
+    password (str): The password string to be validated.
+
+    Raises:
+    HTTPException: If the password does not meet the required criteria.
+
+    Criteria:
+    1. The password must be between 6 and 8 characters long.
+    2. The password must contain at least one uppercase letter.
+    3. The password must contain at least one lowercase letter.
+    4. The password must contain at least one special character from the set [!@#$%^&*(),.?":{}|<>].
+
+    Example usage:
+    # >>> validate_password("Pass!w")
+    Raises HTTPException with status code 400 and detail "Password must be between 6 and 8 characters long"
+    # >>> validate_password("Password!")
+    Raises HTTPException with status code 400 and detail "Password must be between 6 and 8 characters long"
+    # >>> validate_password("Pass!")
+    Raises HTTPException with status code 400 and detail "Password must contain at least one uppercase letter"
+    # >>> validate_password("pass!")
+    Raises HTTPException with status code 400 and detail "Password must contain at least one lowercase letter"
+    # >>> validate_password("Passw")
+    Raises HTTPException with status code 400 and detail "Password must contain at least one special character"
+    """
+
+    # Check if the password length is between 6 and 8 characters
+    if len(password) < 6 or len(password) > 8:
+        raise HTTPException(status_code=400, detail="Password must be between 6 and 8 characters long")
+
+    # Check for at least one uppercase letter in the password
+    if not re.search(r'[A-Z]', password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
+
+    # Check for at least one lowercase letter in the password
+    if not re.search(r'[a-z]', password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one lowercase letter")
+
+    # Check for at least one special character in the password
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one special character")
+
+
 # Function to register user
 def register_user(db, user: UserCreate):
     """
@@ -113,6 +161,8 @@ def register_user(db, user: UserCreate):
             print(e.detail)
         Note: This function assumes the existence of a `hash_password` function that takes a plain password and returns a hashed version.
     """
+    # Validate the password
+    validate_password(user.password)
     # Check if user already exists
     db.execute("SELECT id FROM users WHERE email = %s", (user.email,))
     existing_user = db.fetchone()
