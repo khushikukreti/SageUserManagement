@@ -1,6 +1,5 @@
 CREATE or replace TABLE users (
     id INTEGER AUTOINCREMENT ORDER PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
-    hashed_password VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL
+    hashed_password VARCHAR(255) NOT NULL
 );
