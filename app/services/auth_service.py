@@ -78,7 +78,8 @@ def authenticate_user(db, email: str, password: str):
         Note: This function assumes the existence of a `verify_password` function that takes a plain password and
         a hashed password, returning True if they match, and False otherwise.
     """
-    db.execute("SELECT id, email, hashed_password, role FROM users WHERE email = %s", (email,))
+    db.execute("SELECT a.id, a.email, a.hashed_password, b.role FROM users a"
+               " join roles b on a.id=b.id WHERE a.email = %s", (email,))
     user = db.fetchone()
     if not user or not verify_password(password, user[2]):
         return False
@@ -169,9 +170,12 @@ def register_user(db, user: UserCreate):
     if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
     hashed_password = hash_password(user.password)
-    db.execute("INSERT INTO users (email, hashed_password, role) VALUES (%s, %s, %s)", (user.email, hashed_password, "user"))
-    new_user = db.execute("SELECT id,email,role FROM users WHERE email = %s", (user.email,)).fetchone()
-    print(new_user)
+    db.execute("INSERT INTO users (email, hashed_password) VALUES (%s, %s)", (user.email, hashed_password))
+    new_user = db.execute("SELECT id FROM users  WHERE email = %s", (user.email,)).fetchone()
+    db.execute("INSERT INTO roles (id, role) VALUES (%s, %s)", (new_user[0], 'user'))
+    new_user = db.execute("SELECT a.id,a.email, b.role FROM users a join roles b on a.id=b.id WHERE a.email = %s", (user.email,)).fetchone()
+
+
     return UserResponse(id=new_user[0], email=new_user[1], role=new_user[2])
 
 def google_login(token, db):
@@ -221,7 +225,9 @@ def google_login(token, db):
         raise HTTPException(status_code=400, detail="Unable to retrieve user information from Google")
 
     # Check if the user already exists
-    db.execute("SELECT id, email, role FROM users WHERE email = %s", (email,))
+    db.execute("SELECT a.id, a.email, b.role FROM users a"
+               " join roles b on a.id=b.id WHERE a.email = %s", (email,))
+    # db.execute("SELECT id, email, role FROM users WHERE email = %s", (email,))
     existing_user = db.fetchone()
 
     if existing_user:
@@ -230,12 +236,13 @@ def google_login(token, db):
     else:
         # Create user if not exists
         hashed_password = hash_password(google_user_id)  # Using Google User ID as a pseudo-password for demo
-        db.execute("INSERT INTO users (email, hashed_password, role,id) VALUES (%s, %s, %s, %s)", (email, hashed_password, 'user', google_user_id))  # assuming role_id 2 for regular user
-        db.execute("SELECT id, role FROM users WHERE email = %s", (email,))
+        db.execute("INSERT INTO users (email, hashed_password,id) VALUES (%s, %s, %s)", (email, hashed_password, google_user_id))  # assuming role_id 2 for regular user
+        db.execute("INSERT INTO roles (id, role) VALUES (%s, %s)", (google_user_id, 'user'))
+        db.execute("SELECT a.id, b.role FROM users a join roles b on a.id=b.id WHERE a.email = %s", (email,))
         new_user = db.fetchone()
         user_id = new_user[0]
         role = new_user[1]
 
     # Generate JWT token
-    access_token = create_access_token(data={"sub": email})
-    return {"access_token": access_token, "token_type": "bearer", "id": user_id, "role_id": role}
+    access_token = create_access_token(data={"sub": email, 'role': role})
+    return {"access_token": access_token, "token_type": "bearer"}

@@ -52,7 +52,7 @@ def manual_login(form_data: UserCreate, db: Session = Depends(get_db)):
     user = authenticate_user(db, form_data.email, form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Invalid credentials")
-    access_token = create_access_token(data={"sub": user[1]})
+    access_token = create_access_token(data={"sub": user[1], "role": user[3]})
     return {"access_token": access_token, "token_type": "bearer"}
 
 # Google login endpoint
